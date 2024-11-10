@@ -28,7 +28,10 @@ def split_population(total: int, num_parts: int) -> List[int]:
 
     splits = [randint(0, total) for _ in range(num_parts - 1)]
     splits = [0] + sorted(splits) + [total]
-    return [splits[i+1] - splits[i] for i in range(num_parts)]
+    splits = [splits[i+1] - splits[i] for i in range(num_parts)]
+
+    assert(sum(splits) == total)
+    return splits
 
 def distribute_jerries(num_jerries: int, pops: List[int]) -> List[int]:
     """Distribute jerries among census blocks"""
@@ -46,12 +49,24 @@ def distribute_jerries(num_jerries: int, pops: List[int]) -> List[int]:
     discrepancy = num_jerries - sum(jerries)
     i = 0
     while discrepancy > 0:
-        if jerries[i] < pops[i] - 1:
+        if jerries[i] <= pops[i] - 1:
             jerries[i] += 1
             discrepancy -= 1
         i = (i + 1) % num_children
 
+    assert(sum(jerries) == num_jerries)
     return jerries
+
+def create_adjacency_lists(layer: List[CensusBlock]) -> List[List[CensusBlock]]:
+    if len(layer) == 0:
+        return [[]]
+    ret = []
+    for node in layer:
+        possible_neighbors = [n for n in layer if n != node]
+        num_neighbors = randint(1, len(possible_neighbors))
+        ret.append(random.sample(possible_neighbors, num_neighbors))
+
+    return ret
 
 def create_tree_leaves(num_leaves: int, total_pop: int, total_jerries: int) -> List[CensusBlock]:
     pops = split_population(total_pop, num_leaves)
@@ -59,7 +74,11 @@ def create_tree_leaves(num_leaves: int, total_pop: int, total_jerries: int) -> L
 
     leaves = []
     for pop, jerry in zip(pops, jerries):
-        leaves.append(CensusBlock(id=_assign_id(), population=pop, jerries=jerry))
+        leaves.append(CensusBlock(population=pop, jerries=jerry))
+
+    for leaf, adj in zip(leaves, create_adjacency_lists(leaves)):
+        leaf.siblings = adj
+
     return leaves
 
 
@@ -90,15 +109,26 @@ def create_tree_layer(num_in_layer: int, leaves: List[CensusBlock]) -> List[Cens
 
     assert(len(leaves) == 0)
 
+    # Add adjacency lists _within the layer_ only.
+    for parent, adj in zip(new_parents, create_adjacency_lists(new_parents)):
+        parent.siblings = adj
     return new_parents
 
+def create_tree(num_layers: int, fanout: int, total_pop: int, total_jerries: int):
+    leaves = create_tree_leaves(fanout ** num_layers, total_pop, total_jerries)
 
+    layers = [leaves]
+    for layer_num in reversed(range(num_layers)):
+        nodes_in_layer = fanout ** layer_num
+        layer = create_tree_layer(nodes_in_layer, layers[-1])
+        layers.append(layer)
 
-def create_tree(num_layers: int, total_pop: int, total_jerries: int):
-    pass # TODO
+    return layers
+
 
 def main():
-    pass # TODO
+    pops = split_population(20, 3)
+    jerries = distribute_jerries(19, pops)
 
 
 
