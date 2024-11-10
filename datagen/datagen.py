@@ -58,7 +58,7 @@ def distribute_jerries(num_jerries: int, pops: List[int]) -> List[int]:
     return jerries
 
 def create_adjacency_lists(layer: List[CensusBlock]) -> List[List[CensusBlock]]:
-    if len(layer) == 0:
+    if len(layer) <= 1:
         return [[]]
     ret = []
     for node in layer:
