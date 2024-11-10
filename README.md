@@ -1,5 +1,13 @@
 # CPSC 464 Group 5: Gerrymandering
 
+## Environment Setup
+
+1. Ensure [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is installed on your system.
+2. Run `conda env create -f environment.yml` to create a new Conda environment
+   with all the required dependencies.
+3. Activate the environment with `conda activate cpsc464-gerrymandering`. 
+4. Run the programs you want. Eg: `python3 datagen/datagen.py`. 
+
 ## Data Pipeline
 
 Census data (both pre and post DP) is represented as three CSVs. 
