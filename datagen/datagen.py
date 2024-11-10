@@ -5,23 +5,9 @@ import random
 from random import randint
 from dataclasses import dataclass, field
 from typing import List, Optional
+from pprint import pprint
 
-id_counter: int = 0
-
-def _assign_id():
-    """Every block is assigned a unique ID"""
-    global id_counter
-    id_counter += 1
-    return id_counter
-
-@dataclass
-class CensusBlock:
-    id: int = field(default_factory=_assign_id)
-    population: int = 0
-    jerries: int = 0
-    children: List['CensusBlock'] = field(default_factory=list)
-    siblings: List['CensusBlock'] = field(default_factory=list)
-
+from census import *
 
 def split_population(total: int, num_parts: int) -> List[int]:
     """Randomly splits a total into `num_parts` values that sum to `total`"""
@@ -125,10 +111,9 @@ def create_tree(num_layers: int, fanout: int, total_pop: int, total_jerries: int
 
     return layers
 
-
 def main():
-    pops = split_population(20, 3)
-    jerries = distribute_jerries(19, pops)
+    layers = create_tree(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
+
 
 
 
