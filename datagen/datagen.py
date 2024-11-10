@@ -7,9 +7,9 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 from pprint import pprint
 
-from census import *
+from census import CensusBlock, write_census_tree
 
-def split_population(total: int, num_parts: int) -> List[int]:
+def _split_population(total: int, num_parts: int) -> List[int]:
     """Randomly splits a total into `num_parts` values that sum to `total`"""
 
     splits = [randint(0, total) for _ in range(num_parts - 1)]
@@ -19,7 +19,7 @@ def split_population(total: int, num_parts: int) -> List[int]:
     assert(sum(splits) == total)
     return splits
 
-def distribute_jerries(num_jerries: int, pops: List[int]) -> List[int]:
+def _distribute_jerries(num_jerries: int, pops: List[int]) -> List[int]:
     """Distribute jerries among census blocks"""
     num_children = len(pops)
 
@@ -43,7 +43,7 @@ def distribute_jerries(num_jerries: int, pops: List[int]) -> List[int]:
     assert(sum(jerries) == num_jerries)
     return jerries
 
-def create_adjacency_lists(layer: List[CensusBlock]) -> List[List[CensusBlock]]:
+def _create_adjacency_lists(layer: List[CensusBlock]) -> List[List[CensusBlock]]:
     if len(layer) <= 1:
         return [[]]
     ret = []
@@ -54,21 +54,21 @@ def create_adjacency_lists(layer: List[CensusBlock]) -> List[List[CensusBlock]]:
 
     return ret
 
-def create_tree_leaves(num_leaves: int, total_pop: int, total_jerries: int) -> List[CensusBlock]:
-    pops = split_population(total_pop, num_leaves)
-    jerries = distribute_jerries(total_jerries, pops)
+def _create_tree_leaves(num_leaves: int, total_pop: int, total_jerries: int) -> List[CensusBlock]:
+    pops = _split_population(total_pop, num_leaves)
+    jerries = _distribute_jerries(total_jerries, pops)
 
     leaves = []
     for pop, jerry in zip(pops, jerries):
         leaves.append(CensusBlock(population=pop, jerries=jerry))
 
-    for leaf, adj in zip(leaves, create_adjacency_lists(leaves)):
+    for leaf, adj in zip(leaves, _create_adjacency_lists(leaves)):
         leaf.siblings = adj
 
     return leaves
 
 
-def create_tree_layer(num_in_layer: int, leaves: List[CensusBlock]) -> List[CensusBlock]:
+def _create_tree_layer(num_in_layer: int, leaves: List[CensusBlock]) -> List[CensusBlock]:
     """Equally assign child leaves to parent leaves"""
 
     children_per_parent = len(leaves) // num_in_layer
@@ -96,26 +96,22 @@ def create_tree_layer(num_in_layer: int, leaves: List[CensusBlock]) -> List[Cens
     assert(len(leaves) == 0)
 
     # Add adjacency lists _within the layer_ only.
-    for parent, adj in zip(new_parents, create_adjacency_lists(new_parents)):
+    for parent, adj in zip(new_parents, _create_adjacency_lists(new_parents)):
         parent.siblings = adj
     return new_parents
 
-def create_tree(num_layers: int, fanout: int, total_pop: int, total_jerries: int):
-    leaves = create_tree_leaves(fanout ** num_layers, total_pop, total_jerries)
+def create_tree(num_layers: int, fanout: int, total_pop: int, total_jerries: int) -> CensusBlock:
+    leaves = _create_tree_leaves(fanout ** num_layers, total_pop, total_jerries)
 
     layers = [leaves]
     for layer_num in reversed(range(num_layers)):
         nodes_in_layer = fanout ** layer_num
-        layer = create_tree_layer(nodes_in_layer, layers[-1])
+        layer = _create_tree_layer(nodes_in_layer, layers[-1])
         layers.append(layer)
 
-    return layers
-
-def main():
-    layers = create_tree(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
-
-
-
+    assert(len(layers[-1]) == 1)
+    return layers[-1][0]
 
 if __name__ == '__main__':
-    main()
+    root = create_tree(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
+    write_census_tree(root)
