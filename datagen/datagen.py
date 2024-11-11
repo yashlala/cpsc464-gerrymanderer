@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import numpy as np
 import random
+import numpy as np
 from random import randint
 from dataclasses import dataclass, field
 from typing import List, Optional
