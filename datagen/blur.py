@@ -5,7 +5,6 @@ from typing import List
 from census import CensusBlock, write_census_tree
 from datagen import create_tree
 
-#this was created with both human code and generated content and is still a work in progress
 EPSILON = 0.5
 
 def add_laplace_noise(value, epsilon):
@@ -66,3 +65,5 @@ if __name__ == '__main__':
     treeStruct = create_tree(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
     write_census_tree(treeStruct)
     blur_and_save_census_data(treeStruct)
+
+#this was created with both human code and generated content and is still a work in progress
