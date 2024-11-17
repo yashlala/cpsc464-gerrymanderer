@@ -71,7 +71,7 @@ def refine_districts(districts, G, target_population):
 def main():
     # Input file paths
     adjacency_file = "blurred_adjacency.csv"
-    demographics_file = "blurred_demographics.csv"
+    demographics_file = "blurred_demographic.csv"
 
     # Number of districts and party to favor
     num_districts = 4
