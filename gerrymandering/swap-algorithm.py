@@ -39,6 +39,8 @@ def gerrymander(adjacency_file, demographics_file, num_districts, party):
     total_population = sum(d['population'] for d in demographics.values())
     target_population = total_population / num_districts
 
+    print(target_population)
+
     # Step 3: Initialize districts
     districts = initialize_districts(num_districts, target_population)
 
@@ -51,16 +53,15 @@ def gerrymander(adjacency_file, demographics_file, num_districts, party):
         for district in districts.values():
             # Ensure the block does not exceed target population
             if district['population'] + demographics[block]['population'] <= target_population:
-                if is_contiguous(district, block, G):
+                if is_contiguous(district, block, G) or district['population'] == 0:
                     assign_block_to_district(district, block, demographics)
                     assigned = True
                     break
         if not assigned:
-            print(f"Block {block} could not be assigned due to population constraints.")
-
+            print(f"Block {block} could not be assigned due to population/contiguity constraints.")
 
     # Step 6: Refinement to balance populations across districts
-    refine_districts(districts, G, target_population, demographics)
+    # refine_districts(districts, G, target_population, demographics)
 
     return [district['blocks'] for district in districts.values()]
 
@@ -69,6 +70,8 @@ def favorability_score(block_demo, party):
     if party == 'D':
         return block_demo['democrats'] / block_demo['population']
     else:
+        if block_demo['population'] == 0:
+            return 0
         return (block_demo['population'] - block_demo['democrats']) / block_demo['population']
 
 def is_contiguous(district, block, G):
@@ -108,9 +111,6 @@ def refine_districts(districts, G, target_population, demographics):
     refine_districts(districts, G, target_population, demographics)
     for district_id, district in enumerate(districts.values()):
         print(f"After Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
-
-
-
 
 
 def gerrymander_debug(adjacency_file, demographics_file, num_districts, party):
@@ -157,8 +157,6 @@ def gerrymander_debug(adjacency_file, demographics_file, num_districts, party):
 
     return [district['blocks'] for district in districts.values()]
 
-
-
 def main():
     # Input file paths
     adjacency_file = "blurred_adjacency.csv"
@@ -169,7 +167,7 @@ def main():
     party = 'R'  # 'R' for Republicans, 'D' for Democrats
 
     # Run the debugging version of the gerrymander algorithm
-    results = gerrymander_debug(adjacency_file, demographics_file, num_districts, party)
+    results = gerrymander(adjacency_file, demographics_file, num_districts, party)
 
 
     # Load demographics to calculate statistics
