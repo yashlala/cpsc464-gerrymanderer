@@ -6,13 +6,20 @@ def load_data(adjacency_file, demographics_file):
     adj_df = pd.read_csv(adjacency_file)
     G = nx.Graph()
     for _, row in adj_df.iterrows():
-        G.add_edge(row['blockA'], row['blockB'])
+        G.add_edge(int(row['blockA']), int(row['blockB']))  # Convert to integers
     
     # Load demographic data
     demo_df = pd.read_csv(demographics_file)
-    demographics = {row['block']: {'population': row['population'], 'democrats': row['num_positive']}
-                    for _, row in demo_df.iterrows()}
+    demographics = {
+        int(row['block']): {
+            'population': float(row['population']), 
+            'democrats': float(row['num_positive'])
+        }
+        for _, row in demo_df.iterrows()
+    }
     
+    return G, demographics
+
     return G, demographics
 
 def initialize_districts(num_districts, target_population):
@@ -27,10 +34,10 @@ def assign_block_to_district(district, block, demographics):
 def gerrymander(adjacency_file, demographics_file, num_districts, party):
     # Step 1: Load data
     G, demographics = load_data(adjacency_file, demographics_file)
-    
+
     # Step 2: Calculate target population per district
     total_population = sum(d['population'] for d in demographics.values())
-    target_population = total_population // num_districts
+    target_population = total_population / num_districts
 
     # Step 3: Initialize districts
     districts = initialize_districts(num_districts, target_population)
@@ -38,15 +45,22 @@ def gerrymander(adjacency_file, demographics_file, num_districts, party):
     # Step 4: Sort blocks by favorability to the target party
     sorted_blocks = sorted(demographics.keys(), key=lambda b: favorability_score(demographics[b], party), reverse=True)
 
-    # Step 5: Assign blocks to districts based on packing/cracking
+    # Step 5: Assign blocks to districts based on packing/cracking strategy
     for block in sorted_blocks:
-        for district_id, district in districts.items():
-            if district['population'] < target_population and is_contiguous(district, block, G):
-                assign_block_to_district(district, block, demographics)
-                break  # move to next block
+        assigned = False
+        for district in districts.values():
+            # Ensure the block does not exceed target population
+            if district['population'] + demographics[block]['population'] <= target_population:
+                if is_contiguous(district, block, G):
+                    assign_block_to_district(district, block, demographics)
+                    assigned = True
+                    break
+        if not assigned:
+            print(f"Block {block} could not be assigned due to population constraints.")
 
-    # Step 6: Refinement (if needed to balance populations or enforce contiguity)
-    refine_districts(districts, G, target_population)
+
+    # Step 6: Refinement to balance populations across districts
+    refine_districts(districts, G, target_population, demographics)
 
     return [district['blocks'] for district in districts.values()]
 
@@ -64,9 +78,86 @@ def is_contiguous(district, block, G):
             return True
     return False
 
-def refine_districts(districts, G, target_population):
-    # Further tweak districts to improve population balance and favorability.
-    pass  # Implementation detail
+def refine_districts(districts, G, target_population, demographics):
+    for district in districts.values():
+        while district['population'] > target_population:
+            # Find a block to move out
+            for block in list(district['blocks']):
+                # Temporarily remove the block
+                district['blocks'].remove(block)
+                district['population'] -= demographics[block]['population']
+                district['democrats'] -= demographics[block]['democrats']
+
+                if not is_contiguous(district, block, G):
+                    # Revert if contiguity is broken
+                    district['blocks'].add(block)
+                    district['population'] += demographics[block]['population']
+                    district['democrats'] += demographics[block]['democrats']
+                    continue
+
+                # Move block to underpopulated district
+                for other_district in districts.values():
+                    if other_district['population'] + demographics[block]['population'] <= target_population:
+                        assign_block_to_district(other_district, block, demographics)
+                        break
+                break
+    
+    print(f"Refining Districts...")
+    for district_id, district in enumerate(districts.values()):
+        print(f"Before Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
+    refine_districts(districts, G, target_population, demographics)
+    for district_id, district in enumerate(districts.values()):
+        print(f"After Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
+
+
+
+
+
+def gerrymander_debug(adjacency_file, demographics_file, num_districts, party):
+    # Step 1: Load data
+    G, demographics = load_data(adjacency_file, demographics_file)
+    print("\nLoaded Data:")
+    print(f"Total Blocks: {len(G.nodes)}")
+    print(f"Total Edges: {len(G.edges)}")
+    print(f"Demographics: {demographics}\n")
+    
+    # Step 2: Calculate target population per district
+    total_population = sum(d['population'] for d in demographics.values())
+    target_population = total_population // num_districts
+    print(f"Total Population: {total_population}, Target Population per District: {target_population}\n")
+
+    # Step 3: Initialize districts
+    districts = initialize_districts(num_districts, target_population)
+
+    # Step 4: Sort blocks by favorability to the target party
+    sorted_blocks = sorted(demographics.keys(), key=lambda b: favorability_score(demographics[b], party), reverse=True)
+    print(f"Sorted Blocks by Favorability: {sorted_blocks}\n")
+
+    # Step 5: Assign blocks to districts with debug output
+    for block in sorted_blocks:
+        assigned = False
+        print(f"Attempting to assign block {block} (population={demographics[block]['population']}, "
+              f"democrats={demographics[block]['democrats']})")
+        for district_id, district in districts.items():
+            if district['population'] < target_population:
+                # Temporarily bypass contiguity for debugging
+                assign_block_to_district(district, block, demographics)
+                assigned = True
+                print(f"  -> Assigned block {block} to district {district_id}. "
+                      f"District Population: {district['population']}")
+                break
+        if not assigned:
+            print(f"  !! Block {block} could not be assigned under current constraints.\n")
+
+    # Step 6: Print final district assignments
+    print("\nFinal District Assignments:")
+    for district_id, district in districts.items():
+        print(f"District {district_id}: Blocks: {district['blocks']}, Population: {district['population']}, "
+              f"Democrats: {district['democrats']}")
+
+    return [district['blocks'] for district in districts.values()]
+
+
 
 def main():
     # Input file paths
@@ -77,8 +168,9 @@ def main():
     num_districts = 4
     party = 'R'  # 'R' for Republicans, 'D' for Democrats
 
-    # Run the gerrymandering algorithm
-    results = gerrymander(adjacency_file, demographics_file, num_districts, party)
+    # Run the debugging version of the gerrymander algorithm
+    results = gerrymander_debug(adjacency_file, demographics_file, num_districts, party)
+
 
     # Load demographics to calculate statistics
     _, demographics = load_data(adjacency_file, demographics_file)
