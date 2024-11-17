@@ -68,4 +68,33 @@ def refine_districts(districts, G, target_population):
     # Further tweak districts to improve population balance and favorability.
     pass  # Implementation detail
 
+def main():
+    # Input file paths
+    adjacency_file = "blurred_adjacency.csv"
+    demographics_file = "blurred_demographics.csv"
 
+    # Number of districts and party to favor
+    num_districts = 4
+    party = 'R'  # 'R' for Republicans, 'D' for Democrats
+
+    # Run the gerrymandering algorithm
+    results = gerrymander(adjacency_file, demographics_file, num_districts, party)
+
+    # Load demographics to calculate statistics
+    _, demographics = load_data(adjacency_file, demographics_file)
+
+    # Print results for each district
+    print("\nGerrymandering Results:")
+    for district_id, blocks in enumerate(results):
+        total_population = sum(demographics[block]['population'] for block in blocks)
+        total_democrats = sum(demographics[block]['democrats'] for block in blocks)
+        total_republicans = total_population - total_democrats
+
+        print(f"\nDistrict {district_id}:")
+        print(f"  Total Population: {total_population}")
+        print(f"  Democrats: {total_democrats}")
+        print(f"  Republicans: {total_republicans}")
+        print(f"  Blocks: {sorted(blocks)}")
+
+if __name__ == "__main__":
+    main()
