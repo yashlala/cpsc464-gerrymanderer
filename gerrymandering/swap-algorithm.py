@@ -6,11 +6,11 @@ def load_data(adjacency_file, demographics_file):
     adj_df = pd.read_csv(adjacency_file)
     G = nx.Graph()
     for _, row in adj_df.iterrows():
-        G.add_edge(row['block1'], row['block2'])
+        G.add_edge(row['blockA'], row['blockB'])
     
     # Load demographic data
     demo_df = pd.read_csv(demographics_file)
-    demographics = {row['block']: {'population': row['population'], 'democrats': row['democrats']}
+    demographics = {row['block']: {'population': row['population'], 'democrats': row['num_positive']}
                     for _, row in demo_df.iterrows()}
     
     return G, demographics
