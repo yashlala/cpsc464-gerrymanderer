@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import csv
 from pathlib import Path
@@ -5,65 +7,49 @@ from typing import List
 from census import CensusBlock, write_census_tree
 from datagen import create_tree
 
-EPSILON = 0.5
-
-def add_laplace_noise(value, epsilon):
-    scale = 1 / epsilon
-    l_noise = value + np.random.laplace(0, scale)
+def _add_laplace_noise(value, epsilon):
+    l_noise = value + np.random.laplace(0, 1 / epsilon)
     return l_noise
 
-def apply_blurring(blocks: List[CensusBlock], epsilon=EPSILON):
-    for block in blocks:
-        block.population = max(0, round(add_laplace_noise(block.population, epsilon), 2))
-        block.jerries = max(0, round(add_laplace_noise(block.jerries, epsilon), 2))
+def blur_tree(root: CensusBlock, epsilon=0.5):
+    root.population = round(_add_laplace_noise(root.population, epsilon), 2)
+    root.jerries = round(_add_laplace_noise(root.jerries, epsilon), 2)
 
-def save_to_csv(blocks: List[CensusBlock], adj_file, demo_file, hier_file):
-    with open(adj_file, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["blockA", "blockB"])
-        for block in blocks:
-            for sibling in block.siblings:
-                writer.writerow([block.id, sibling.id])
+    for child in root.children:
+        blur_tree(child)
 
-    with open(demo_file, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["block", "population", "num_positive"])
-        for block in blocks:
-            writer.writerow([block.id, block.population, block.jerries])
+    # y: We can't just add laplace noise and provide block data as-is.
+    #    Census data needs some basic invariants to make sense
+    #    (eg: population > 0). In the real TopDown, these invariants are
+    #    encoded as parts of the noisy optimization problem itself (so the
+    #    overall solution is guaranteed to be DP while also adhering to these
+    #    invariants). Here, we encode some of them manually, potentially losing
+    #    DP in the process.
 
-    with open(hier_file, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["parent_block", "child_block"])
-        
-        def write_hierarchy(block):
-            for child in block.children:
-                writer.writerow([block.id, child.id])
-                write_hierarchy(child)
+    # population should be at least as large as the children.
+    max_child_pop = max((child.population for child in root.children),
+                        default=0)
+    root.population = max(root.population, max_child_pop)
 
-        for block in blocks:
-            write_hierarchy(block)
+    max_child_jerries = max((child.jerries for child in root.children),
+                            default=0)
+    root.jerries = max(root.jerries, max_child_jerries)
 
-def blur_and_save_census_data(root_block, epsilon=EPSILON):
-    def collect_blocks(block):
-        all_blocks.append(block)
-        for child in block.children:
-            collect_blocks(child)
+    # population >= 0 ;)
+    root.population = max(0, root.population)
+    root.jerries = max(0, root.jerries)
 
-    all_blocks = []
-    collect_blocks(root_block)
-
-    apply_blurring(all_blocks, epsilon)
-
-    save_to_csv(
-        all_blocks, 
-        adj_file=Path('blurred_adjacency.csv'),
-        demo_file=Path('blurred_demographic.csv'),
-        hier_file=Path('blurred_hierarchy.csv')
-    )
+    # we target a _subset_ of the population
+    root.jerries = min(root.jerries, root.population)
 
 if __name__ == '__main__':
-    treeStruct = create_tree(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
-    write_census_tree(treeStruct)
-    blur_and_save_census_data(treeStruct)
-
-#this was created with both human code and generated content and is still a work in progress
+    tree = create_tree(num_layers=2, fanout=2, total_pop=400, total_jerries=10)
+    write_census_tree(tree,
+                      adjacency_outfile=Path('adjacency.csv'),
+                      demographic_outfile=Path('demographic.csv'),
+                      hierarchy_outfile=Path('hierarchy.csv'))
+    blur_tree(tree)
+    write_census_tree(tree,
+        adjacency_outfile=Path('blurred_adjacency.csv'),
+        demographic_outfile=Path('blurred_demographic.csv'),
+        hierarchy_outfile=Path('blurred_hierarchy.csv'))
