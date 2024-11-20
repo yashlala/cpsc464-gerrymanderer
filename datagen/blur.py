@@ -7,63 +7,35 @@ from datagen import create_tree
 
 EPSILON = 0.5
 
-def add_laplace_noise(value, epsilon):
+def _add_laplace_noise(value, epsilon):
     scale = 1 / epsilon
     l_noise = value + np.random.laplace(0, scale)
     return l_noise
 
-def apply_blurring(blocks: List[CensusBlock], epsilon=EPSILON):
+def _blur_block(blocks: List[CensusBlock], epsilon=EPSILON):
     for block in blocks:
-        block.population = max(0, round(add_laplace_noise(block.population, epsilon), 2))
-        block.jerries = max(0, round(add_laplace_noise(block.jerries, epsilon), 2))
+        block.population = max(0, round(_add_laplace_noise(block.population, epsilon), 2))
+        block.jerries = max(0, round(_add_laplace_noise(block.jerries, epsilon), 2))
 
-def save_to_csv(blocks: List[CensusBlock], adj_file, demo_file, hier_file):
-    with open(adj_file, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["blockA", "blockB"])
-        for block in blocks:
-            for sibling in block.siblings:
-                writer.writerow([block.id, sibling.id])
-
-    with open(demo_file, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["block", "population", "num_positive"])
-        for block in blocks:
-            writer.writerow([block.id, block.population, block.jerries])
-
-    with open(hier_file, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["parent_block", "child_block"])
-        
-        def write_hierarchy(block):
-            for child in block.children:
-                writer.writerow([block.id, child.id])
-                write_hierarchy(child)
-
-        for block in blocks:
-            write_hierarchy(block)
-
-def blur_and_save_census_data(root_block, epsilon=EPSILON):
+def blur_tree(root_block, epsilon=EPSILON):
+    all_blocks = []
     def collect_blocks(block):
         all_blocks.append(block)
         for child in block.children:
             collect_blocks(child)
-
-    all_blocks = []
     collect_blocks(root_block)
 
-    apply_blurring(all_blocks, epsilon)
-
-    save_to_csv(
-        all_blocks, 
-        adj_file=Path('blurred_adjacency.csv'),
-        demo_file=Path('blurred_demographic.csv'),
-        hier_file=Path('blurred_hierarchy.csv')
-    )
+    _blur_block(all_blocks, epsilon)
 
 if __name__ == '__main__':
     treeStruct = create_tree(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
-    write_census_tree(treeStruct)
-    blur_and_save_census_data(treeStruct)
+    write_census_tree(treeStruct,
+                      adjacency_outfile=Path('adjacency.csv'),
+                      demographic_outfile=Path('demographic.csv'),
+                      hierarchy_outfile=Path('hierarchy.csv'))
 
-#this was created with both human code and generated content and is still a work in progress
+    blur_tree(treeStruct)
+    write_census_tree(treeStruct,
+        adjacency_outfile=Path('blurred_adjacency.csv'),
+        demographic_outfile=Path('blurred_demographic.csv'),
+        hierarchy_outfile=Path('blurred_hierarchy.csv'))
