@@ -101,6 +101,19 @@ def _create_tree_layer(num_in_layer: int, leaves: List[CensusBlock]) -> List[Cen
     return new_parents
 
 def create_tree(num_layers: int, fanout: int, total_pop: int, total_jerries: int) -> CensusBlock:
+    """Run a mock census, storing the output as a tree of census blocks.
+
+    Arguments:
+        - `num_layers`: how many layers should be in the tree?
+        - `fanout`: the degree of the tree (number of children per node)
+        - `total_pop`: the total population to be distributed among census
+          blocks.
+        - `total_jerries`: the total number of people that should be
+          "positive" for a trait. Our end-to-end system will gerrymander on
+          this trait. Examples: `total_positive=4` for 4 total Latinos in the
+          census results.
+    """
+
     leaves = _create_tree_leaves(fanout ** num_layers, total_pop, total_jerries)
 
     layers = [leaves]
