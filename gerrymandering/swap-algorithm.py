@@ -1,13 +1,17 @@
 import pandas as pd
 import networkx as nx
 
-def load_data(adjacency_file, demographics_file):
+def load_data(adjacency_file, demographics_file, heirarchy_file):
     # Load adjacency as a graph
     adj_df = pd.read_csv(adjacency_file)
     G = nx.Graph()
     for _, row in adj_df.iterrows():
         G.add_edge(int(row['blockA']), int(row['blockB']))  # Convert to integers
-    
+
+    #Load heirarchy as a graph
+    heir_df = pd.read_csv(heirarchy_file)
+    H = nx.from_pandas_edgelist(heir_df, source='blockA', target='blockB', create_using=nx.DiGraph())
+        
     # Load demographic data
     demo_df = pd.read_csv(demographics_file)
     demographics = {
@@ -18,8 +22,6 @@ def load_data(adjacency_file, demographics_file):
         for _, row in demo_df.iterrows()
     }
     
-    return G, demographics
-
     return G, demographics
 
 def initialize_districts(num_districts, target_population):
