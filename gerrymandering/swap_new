@@ -1,10 +1,10 @@
 import pandas as pd
 import networkx as nx
 
-def load_data(adjacency_file, demographics_file, heirarchy_file):
-    #Load heirarchy as a graph
-    heir_df = pd.read_csv(heirarchy_file)
-    H = nx.from_pandas_edgelist(heir_df, source='blockA', target='blockB', create_using=nx.DiGraph())
+def load_data(adjacency_file, demographics_file, hierarchy_file):
+    #Load hierarchy as a graph
+    hier_df = pd.read_csv(hierarchy_file)
+    H = nx.from_pandas_edgelist(hier_df, source='blockA', target='blockB', create_using=nx.DiGraph())
 
     leaves = set()
     for node in H.nodes:
@@ -169,6 +169,7 @@ def main():
     # Input file paths
     adjacency_file = "blurred_adjacency.csv"
     demographics_file = "blurred_demographic.csv"
+    hierarchy_file = "blurred_hierarchy.csv"
 
     # Number of districts and party to favor
     num_districts = 4
