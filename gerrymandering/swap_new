@@ -2,14 +2,16 @@ import pandas as pd
 import networkx as nx
 
 def load_data(adjacency_file, demographics_file, hierarchy_file):
-    #Load hierarchy as a graph
+    #Load heirarchy as a graph
     hier_df = pd.read_csv(hierarchy_file)
-    H = nx.from_pandas_edgelist(hier_df, source='blockA', target='blockB', create_using=nx.DiGraph())
+    H = nx.from_pandas_edgelist(hier_df, source='parent_block', target='child_block', create_using=nx.DiGraph())
 
     leaves = set()
     for node in H.nodes:
         if H.out_degree(node)==0:
-            leaves.append(node)
+            leaves.add(node)
+
+    print(leaves)
     
     # Load adjacency as a graph
     adj_df = pd.read_csv(adjacency_file)
@@ -25,7 +27,7 @@ def load_data(adjacency_file, demographics_file, hierarchy_file):
             'population': float(row['population']), 
             'democrats': float(row['num_positive'])
         }
-        for _, row in demo_df.iterrows()
+        for _, row in demo_df.iterrows() if int(row['block'] in leaves)
     }
     
     return G, demographics
@@ -39,9 +41,9 @@ def assign_block_to_district(district, block, demographics):
     district['population'] += demographics[block]['population']
     district['democrats'] += demographics[block]['democrats']
 
-def gerrymander(adjacency_file, demographics_file, num_districts, party):
+def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts, party):
     # Step 1: Load data
-    G, demographics = load_data(adjacency_file, demographics_file)
+    G, demographics = load_data(adjacency_file, demographics_file, hierarchy_file)
 
     # Step 2: Calculate target population per district
     total_population = sum(d['population'] for d in demographics.values())
@@ -167,20 +169,20 @@ def gerrymander_debug(adjacency_file, demographics_file, num_districts, party):
 
 def main():
     # Input file paths
-    adjacency_file = "blurred_adjacency.csv"
-    demographics_file = "blurred_demographic.csv"
-    hierarchy_file = "blurred_hierarchy.csv"
+    adjacency_file = "blurred_adjacency_debug-epsilon1.csv"
+    demographics_file = "blurred_demographic_debug-epsilon1.csv"
+    hierarchy_file = "blurred_hierarchy_debug-epsilon1.csv"
 
     # Number of districts and party to favor
-    num_districts = 4
+    num_districts = 7
     party = 'R'  # 'R' for Republicans, 'D' for Democrats
 
     # Run the debugging version of the gerrymander algorithm
-    results = gerrymander(adjacency_file, demographics_file, num_districts, party)
+    results = gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts, party)
 
 
     # Load demographics to calculate statistics
-    _, demographics = load_data(adjacency_file, demographics_file)
+    _, demographics = load_data(adjacency_file, demographics_file, hierarchy_file)
 
     # Print results for each district
     print("\nGerrymandering Results:")
