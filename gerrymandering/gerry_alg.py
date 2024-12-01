@@ -2,7 +2,7 @@ import pandas as pd
 import networkx as nx
 from pathlib import Path
 
-def load_data(adjacency_file, demographics_file, hierarchy_file):
+def _load_data(adjacency_file, demographics_file, hierarchy_file):
     """Given a census tree as CSV input, returns useful information about the leaf nodes.
 
     Returns:
@@ -39,11 +39,11 @@ def load_data(adjacency_file, demographics_file, hierarchy_file):
     
     return G, demographics
 
-def initialize_districts(num_districts, target_population):
+def _initialize_districts(num_districts, target_population):
     districts = {i: {'blocks': set(), 'population': 0, 'democrats': 0} for i in range(num_districts)}
     return districts
 
-def assign_block_to_district(district, block, demographics):
+def _assign_block_to_district(district, block, demographics):
     district['blocks'].add(block)
     district['population'] += demographics[block]['population']
     district['democrats'] += demographics[block]['democrats']
@@ -57,21 +57,21 @@ def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts
         - num_districts: the number of districts to produce in the output.
         - party: the party to gerrymander _for_.
     Returns:
-        - TODO god knows
+        - A list of districts. Each district is a set of block IDs.
     """
     # Step 1: Load data
-    G, demographics = load_data(adjacency_file, demographics_file, hierarchy_file)
+    G, demographics = _load_data(adjacency_file, demographics_file, hierarchy_file)
 
     # Step 2: Calculate target population per district
     total_population = sum(d['population'] for d in demographics.values())
     target_population = total_population / num_districts
 
     # Step 3: Initialize districts
-    districts = initialize_districts(num_districts, target_population)
+    districts = _initialize_districts(num_districts, target_population)
 
     # Step 4: Sort blocks by favorability to the target party
     sorted_blocks = sorted(demographics.keys(),
-                           key=lambda b: favorability_score(demographics[b], party),
+                           key=lambda b: _favorability_score(demographics[b], party),
                            reverse=True)
 
     # Step 5: Assign blocks to districts based on packing/cracking strategy
@@ -80,8 +80,8 @@ def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts
         for district in districts.values():
             # Ensure the block does not exceed target population
             if district['population'] + demographics[block]['population'] <= target_population:
-                if is_contiguous(district, block, G) or district['population'] == 0:
-                    assign_block_to_district(district, block, demographics)
+                if _is_contiguous(district, block, G) or district['population'] == 0:
+                    _assign_block_to_district(district, block, demographics)
                     assigned = True
                     break
         if not assigned:
@@ -92,7 +92,7 @@ def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts
 
     return [district['blocks'] for district in districts.values()]
 
-def favorability_score(block_demo, party):
+def _favorability_score(block_demo, party):
     # Calculate favorability score for a block for the given party
     if party == 'D':
         return block_demo['democrats'] / block_demo['population']
@@ -101,14 +101,14 @@ def favorability_score(block_demo, party):
             return 0
         return (block_demo['population'] - block_demo['democrats']) / block_demo['population']
 
-def is_contiguous(district, block, G):
+def _is_contiguous(district, block, G):
     # Check if the block is directly adjacent to any block in the district
     for b in district['blocks']:
         if G.has_edge(b, block):
             return True
     return False
 
-def refine_districts(districts, G, target_population, demographics):
+def _refine_districts(districts, G, target_population, demographics):
     for district in districts.values():
         while district['population'] > target_population:
             # Find a block to move out
@@ -118,7 +118,7 @@ def refine_districts(districts, G, target_population, demographics):
                 district['population'] -= demographics[block]['population']
                 district['democrats'] -= demographics[block]['democrats']
 
-                if not is_contiguous(district, block, G):
+                if not _is_contiguous(district, block, G):
                     # Revert if contiguity is broken
                     district['blocks'].add(block)
                     district['population'] += demographics[block]['population']
@@ -128,18 +128,18 @@ def refine_districts(districts, G, target_population, demographics):
                 # Move block to underpopulated district
                 for other_district in districts.values():
                     if other_district['population'] + demographics[block]['population'] <= target_population:
-                        assign_block_to_district(other_district, block, demographics)
+                        _assign_block_to_district(other_district, block, demographics)
                         break
                 break
     
     # print(f"Refining Districts...")
     # for district_id, district in enumerate(districts.values()):
     #     print(f"Before Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
-    refine_districts(districts, G, target_population, demographics)
+    _refine_districts(districts, G, target_population, demographics)
     # for district_id, district in enumerate(districts.values()):
     #     print(f"After Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
 
-def main():
+if __name__ == "__main__":
     # Input file paths
     adjacency_file = "blurred_adjacency_debug-epsilon1.csv"
     demographics_file = "blurred_demographic_debug-epsilon1.csv"
@@ -153,7 +153,7 @@ def main():
     results = gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts, party)
 
     # Load demographics to calculate statistics
-    _, demographics = load_data(adjacency_file, demographics_file, hierarchy_file)
+    _, demographics = _load_data(adjacency_file, demographics_file, hierarchy_file)
 
     # Print results for each district
     print("\nGerrymandering Results:")
@@ -167,6 +167,3 @@ def main():
         print(f"  Democrats: {total_democrats}")
         print(f"  Republicans: {total_republicans}")
         print(f"  Blocks: {sorted(blocks)}")
-
-if __name__ == "__main__":
-    main()
