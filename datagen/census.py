@@ -61,6 +61,9 @@ class CensusBlock:
 
 def _write_adjacency_csv(blocks: List[CensusBlock], filename):
     with open(filename, mode="w", newline="") as file:
+        file.seek(0)
+        file.truncate(0)
+
         writer = csv.writer(file)
         writer.writerow(["blockA", "blockB"])
         
@@ -70,14 +73,18 @@ def _write_adjacency_csv(blocks: List[CensusBlock], filename):
 
 def _write_demographic_csv(blocks: List[CensusBlock], filename):
     with open(filename, mode="w", newline="") as file:
+        file.seek(0)
+        file.truncate(0)
+
         writer = csv.writer(file)
         writer.writerow(["block", "population", "num_positive"])
-
         for block in blocks:
             writer.writerow([block.id, block.population, block.jerries])
 
 def _write_hierarchy_csv(blocks: List[CensusBlock], filename):
     with open(filename, mode="w", newline="") as file:
+        file.seek(0)
+        file.truncate(0)
         writer = csv.writer(file)
         writer.writerow(["parent_block", "child_block"])
 
