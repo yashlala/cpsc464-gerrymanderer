@@ -1,31 +1,25 @@
-# Function to calculate the efficiency gap
-def calculate_efficiency_gap_verified(file_path):
-    import re
+import re
+from dataclasses import dataclass
+from typing import Set, List, Dict, Tuple
+from datagen import CensusBlock
 
-    # Helper function to extract data from a single district
-    def extract_district_data(lines):
-        data = {"Democrats": 0, "Republicans": 0}
-        for line in lines:
-            if "Democrats:" in line:
-                data["Democrats"] = float(re.search(r"Democrats:\s*([\d.]+)", line).group(1))
-            elif "Republicans:" in line:
-                data["Republicans"] = float(re.search(r"Republicans:\s*([\d.]+)", line).group(1))
-        return data
+def efficiency_gap(tree: CensusBlock, districts: List[Set[int]]) -> Tuple[float, List]:
+    leaves = tree.get_leaf_nodes()
+    leaves = { leaf.id: leaf for leaf in leaves }
+
+    @dataclass
+    class DistrictResult:
+        republicans: float = 0
+        democrats: float = 0
 
     # Parse districts from the file
-    districts = []
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-
-    current_district = []
-    for line in lines:
-        if line.startswith("District"):
-            if current_district:  # Save previous district's data
-                districts.append(extract_district_data(current_district))
-                current_district = []
-        current_district.append(line)
-    if current_district:  # Save the final district's data
-        districts.append(extract_district_data(current_district))
+    results: List[DistrictResult] = []
+    for district in districts:
+        result = DistrictResult()
+        for block_id in district:
+            result.democrats += leaves[block_id].jerries
+            result.republicans += leaves[block_id].population - result.democrats
+        results.append(result)
 
     # Initialize totals for wasted votes
     total_dem_wasted = 0
@@ -33,9 +27,9 @@ def calculate_efficiency_gap_verified(file_path):
     detailed_results = []
 
     # Step 1: Calculate wasted votes for each district
-    for idx, district in enumerate(districts):
-        dem_votes = district["Democrats"]
-        rep_votes = district["Republicans"]
+    for idx, district in enumerate(results):
+        dem_votes = district.democrats
+        rep_votes = district.republicans
         total_votes = dem_votes + rep_votes
         winning_threshold = (total_votes / 2) + 1
 
@@ -63,7 +57,7 @@ def calculate_efficiency_gap_verified(file_path):
     net_wasted_votes = total_dem_wasted - total_rep_wasted
 
     # Step 3: Calculate the efficiency gap
-    total_votes_cast = sum(d["Democrats"] + d["Republicans"] for d in districts)
-    efficiency_gap = net_wasted_votes / total_votes_cast
+    total_votes_cast = sum(r.democrats + r.republicans for r in results)
 
+    efficiency_gap = net_wasted_votes / total_votes_cast
     return efficiency_gap, detailed_results

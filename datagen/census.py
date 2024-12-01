@@ -44,6 +44,18 @@ class CensusBlock:
         """Generate a string representation of the tree rooted at this CensusBlock."""
         return "\n".join(self._subtree_to_string_list())
 
+    def get_leaf_nodes(self):
+        """Return a list with all the leaf nodes"""
+        if len(self.children) == 0:
+            return [self]
+
+        # y: I can't shake the feeling there's a way more elegant way to do this...
+        ret = []
+        for child in self.children:
+            ret.extend(child.get_leaf_nodes())
+        return ret
+
+
     def __str__(self) -> str:
         return self.subtree_to_string()
 
