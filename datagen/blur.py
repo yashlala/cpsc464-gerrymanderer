@@ -7,9 +7,11 @@ from typing import List
 from .census import CensusBlock
 from .datagen import run_mock_census
 
+def _clamp(value, lower, upper):
+    return max(min(value, upper), lower)
+
 def _add_laplace_noise(value, epsilon):
-    l_noise = value + np.random.laplace(0, 1 / epsilon)
-    return l_noise
+    return value * _clamp(np.random.laplace(0, 1 / epsilon), 0.8, 1.2)
 
 def blur_census_data(root: CensusBlock, epsilon=0.5):
     root.population = round(_add_laplace_noise(root.population, epsilon), 2)
