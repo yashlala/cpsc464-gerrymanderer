@@ -34,7 +34,8 @@ def _load_data(adjacency_file, demographics_file, hierarchy_file):
             'population': float(row['population']), 
             'democrats': float(row['num_positive'])
         }
-        for _, row in demo_df.iterrows() if int(row['block'] in leaves)
+        for _, row in demo_df.iterrows() 
+        if int(row['block']) in leaves and float(row['population']) > 0
     }
     
     return G, demographics
