@@ -4,7 +4,7 @@ import numpy as np
 import csv
 from pathlib import Path
 from typing import List
-from census import CensusBlock
+from .census import CensusBlock
 from .datagen import run_mock_census
 
 def _add_laplace_noise(value, epsilon):
