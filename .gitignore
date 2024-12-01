@@ -1,1 +1,7 @@
+*.zip
 *.csv
+.ipynb_checkpoints/
+# jupyter LSP
+.virtual_documents/
+**/__pycache__
+**/*.png
