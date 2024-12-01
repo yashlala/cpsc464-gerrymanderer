@@ -30,6 +30,22 @@ class CensusBlock:
         _write_demographic_csv(flat_tree, demographic_outfile)
         _write_hierarchy_csv(flat_tree, hierarchy_outfile)
 
+    def node_to_string(self):
+        """Generate a string representation of this CensusBlock (no children)"""
+        return f"Blk(id={self.id}, pop={self.population}, jerries={self.jerries})"
+
+    def _subtree_to_string_list(self):
+        ret = [f"Blk(id={self.id}, pop={self.population}, jerries={self.jerries})"]
+        for child in self.children:
+            ret.extend(child._subtree_to_string_list())
+        return ret
+
+    def subtree_to_string(self):
+        """Generate a string representation of the tree rooted at this CensusBlock."""
+        return "\n".join(self._subtree_to_string_list())
+
+    def __str__(self) -> str:
+        return self.subtree_to_string()
 
 def _write_adjacency_csv(blocks: List[CensusBlock], filename):
     with open(filename, mode="w", newline="") as file:

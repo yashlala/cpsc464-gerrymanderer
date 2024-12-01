@@ -49,6 +49,16 @@ def assign_block_to_district(district, block, demographics):
     district['democrats'] += demographics[block]['democrats']
 
 def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts, party):
+    """Create a set of legislative districts designed to favor a party.
+
+    Arguments:
+        - adjacency_file: path to a CSV of district adjacency data.
+          see README.
+        - num_districts: the number of districts to produce in the output.
+        - party: the party to gerrymander _for_.
+    Returns:
+        - TODO god knows
+    """
     # Step 1: Load data
     G, demographics = load_data(adjacency_file, demographics_file, hierarchy_file)
 
@@ -122,12 +132,12 @@ def refine_districts(districts, G, target_population, demographics):
                         break
                 break
     
-    print(f"Refining Districts...")
-    for district_id, district in enumerate(districts.values()):
-        print(f"Before Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
+    # print(f"Refining Districts...")
+    # for district_id, district in enumerate(districts.values()):
+    #     print(f"Before Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
     refine_districts(districts, G, target_population, demographics)
-    for district_id, district in enumerate(districts.values()):
-        print(f"After Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
+    # for district_id, district in enumerate(districts.values()):
+    #     print(f"After Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
 
 def main():
     # Input file paths
@@ -141,7 +151,6 @@ def main():
 
     # Run the debugging version of the gerrymander algorithm
     results = gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts, party)
-
 
     # Load demographics to calculate statistics
     _, demographics = load_data(adjacency_file, demographics_file, hierarchy_file)
