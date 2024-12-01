@@ -5,7 +5,7 @@ import csv
 from pathlib import Path
 from typing import List
 from census import CensusBlock, write_census_tree
-from datagen import create_tree
+from .datagen import create_tree
 
 def _add_laplace_noise(value, epsilon):
     l_noise = value + np.random.laplace(0, 1 / epsilon)

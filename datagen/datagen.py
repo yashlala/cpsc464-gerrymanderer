@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 from pprint import pprint
 
-from census import CensusBlock, write_census_tree
+from .census import CensusBlock, write_census_tree
 
 def _split_population(total: int, num_parts: int) -> List[int]:
     """Randomly splits a total into `num_parts` values that sum to `total`"""
