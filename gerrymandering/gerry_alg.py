@@ -84,8 +84,9 @@ def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts
                     _assign_block_to_district(district, block, demographics)
                     assigned = True
                     break
-        if not assigned:
-            print(f"Block {block} could not be assigned due to population/contiguity constraints.")
+        # yash: this is printing _constantly_. I disable this warning.
+        # if not assigned:
+        #     print(f"Block {block} could not be assigned due to population/contiguity constraints.")
 
     # Step 6: Refinement to balance populations across districts
     # refine_districts(districts, G, target_population, demographics)
