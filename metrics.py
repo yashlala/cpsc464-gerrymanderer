@@ -12,13 +12,12 @@ def efficiency_gap(tree: CensusBlock, districts: List[Set[int]]) -> Tuple[float,
         republicans: float = 0
         democrats: float = 0
 
-    # Parse districts from the file
     results: List[DistrictResult] = []
     for district in districts:
         result = DistrictResult()
         for block_id in district:
             result.democrats += leaves[block_id].jerries
-            result.republicans += leaves[block_id].population - result.democrats
+            result.republicans += leaves[block_id].population - leaves[block_id].jerries
         results.append(result)
 
     # Initialize totals for wasted votes
