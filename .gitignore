@@ -4,3 +4,4 @@
 # jupyter LSP
 .virtual_documents/
 **/__pycache__
+**/*.png
