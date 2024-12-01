@@ -95,14 +95,12 @@ def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts
     return [district['blocks'] for district in districts.values()]
 
 def _favorability_score(block_demo, party):
-    # This condition is hack!!!! It invalidates the results. Need to fix this.
-    if block_demo['population'] == 0:
-        return 0
-
     # Calculate favorability score for a block for the given party
     if party == 'D':
         return block_demo['democrats'] / block_demo['population']
     else:
+        if block_demo['population'] == 0:
+            return 0
         return (block_demo['population'] - block_demo['democrats']) / block_demo['population']
 
 def _is_contiguous(district, block, G):
