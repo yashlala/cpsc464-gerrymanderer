@@ -129,51 +129,6 @@ def refine_districts(districts, G, target_population, demographics):
     for district_id, district in enumerate(districts.values()):
         print(f"After Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
 
-
-def gerrymander_debug(adjacency_file, demographics_file, hierarchy_file, num_districts, party):
-    # Step 1: Load data
-    G, demographics = load_data(adjacency_file, hierarchy_file, demographics_file)
-    print("\nLoaded Data:")
-    print(f"Total Blocks: {len(G.nodes)}")
-    print(f"Total Edges: {len(G.edges)}")
-    print(f"Demographics: {demographics}\n")
-    
-    # Step 2: Calculate target population per district
-    total_population = sum(d['population'] for d in demographics.values())
-    target_population = total_population // num_districts
-    print(f"Total Population: {total_population}, Target Population per District: {target_population}\n")
-
-    # Step 3: Initialize districts
-    districts = initialize_districts(num_districts, target_population)
-
-    # Step 4: Sort blocks by favorability to the target party
-    sorted_blocks = sorted(demographics.keys(), key=lambda b: favorability_score(demographics[b], party), reverse=True)
-    print(f"Sorted Blocks by Favorability: {sorted_blocks}\n")
-
-    # Step 5: Assign blocks to districts with debug output
-    for block in sorted_blocks:
-        assigned = False
-        print(f"Attempting to assign block {block} (population={demographics[block]['population']}, "
-              f"democrats={demographics[block]['democrats']})")
-        for district_id, district in districts.items():
-            if district['population'] < target_population:
-                # Temporarily bypass contiguity for debugging
-                assign_block_to_district(district, block, demographics)
-                assigned = True
-                print(f"  -> Assigned block {block} to district {district_id}. "
-                      f"District Population: {district['population']}")
-                break
-        if not assigned:
-            print(f"  !! Block {block} could not be assigned under current constraints.\n")
-
-    # Step 6: Print final district assignments
-    print("\nFinal District Assignments:")
-    for district_id, district in districts.items():
-        print(f"District {district_id}: Blocks: {district['blocks']}, Population: {district['population']}, "
-              f"Democrats: {district['democrats']}")
-
-    return [district['blocks'] for district in districts.values()]
-
 def main():
     # Input file paths
     adjacency_file = "blurred_adjacency_debug-epsilon1.csv"
