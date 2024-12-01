@@ -94,8 +94,7 @@ def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts
     return [district['blocks'] for district in districts.values()]
 
 def _favorability_score(block_demo, party):
-    # This condition is an ugly hack!!!! It invalidates the results. Algorithm
-    # team, please fix this.
+    # This condition is hack!!!! It invalidates the results. Need to fix this.
     if block_demo['population'] == 0:
         return 0
 
