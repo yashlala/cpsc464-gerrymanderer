@@ -1,1 +1,1 @@
-from gerry_alg import *
+from .gerry_alg import gerrymander

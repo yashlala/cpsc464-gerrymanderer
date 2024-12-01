@@ -1,17 +1,24 @@
 import pandas as pd
 import networkx as nx
+from pathlib import Path
 
 def load_data(adjacency_file, demographics_file, hierarchy_file):
+    """Given a census tree as CSV input, returns useful information about the leaf nodes.
+
+    Returns:
+        - The adjacency graph of the leaf nodes.
+        - A dictionary with demographics of the leaf nodes
+    """
+
     #Load heirarchy as a graph
     hier_df = pd.read_csv(hierarchy_file)
-    H = nx.from_pandas_edgelist(hier_df, source='parent_block', target='child_block', create_using=nx.DiGraph())
+    H = nx.from_pandas_edgelist(hier_df, source='parent_block',
+                                target='child_block', create_using=nx.DiGraph())
 
     leaves = set()
     for node in H.nodes:
-        if H.out_degree(node)==0:
+        if H.out_degree(node) == 0:
             leaves.add(node)
-
-    print(leaves)
     
     # Load adjacency as a graph
     adj_df = pd.read_csv(adjacency_file)
@@ -49,13 +56,13 @@ def gerrymander(adjacency_file, demographics_file, hierarchy_file, num_districts
     total_population = sum(d['population'] for d in demographics.values())
     target_population = total_population / num_districts
 
-    print(target_population)
-
     # Step 3: Initialize districts
     districts = initialize_districts(num_districts, target_population)
 
     # Step 4: Sort blocks by favorability to the target party
-    sorted_blocks = sorted(demographics.keys(), key=lambda b: favorability_score(demographics[b], party), reverse=True)
+    sorted_blocks = sorted(demographics.keys(),
+                           key=lambda b: favorability_score(demographics[b], party),
+                           reverse=True)
 
     # Step 5: Assign blocks to districts based on packing/cracking strategy
     for block in sorted_blocks:
@@ -123,9 +130,9 @@ def refine_districts(districts, G, target_population, demographics):
         print(f"After Refinement - District {district_id}: Population: {district['population']}, Blocks: {district['blocks']}")
 
 
-def gerrymander_debug(adjacency_file, demographics_file, num_districts, party):
+def gerrymander_debug(adjacency_file, demographics_file, hierarchy_file, num_districts, party):
     # Step 1: Load data
-    G, demographics = load_data(adjacency_file, demographics_file)
+    G, demographics = load_data(adjacency_file, hierarchy_file, demographics_file)
     print("\nLoaded Data:")
     print(f"Total Blocks: {len(G.nodes)}")
     print(f"Total Edges: {len(G.edges)}")
