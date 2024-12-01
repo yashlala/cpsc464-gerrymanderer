@@ -5,19 +5,30 @@ from pathlib import Path
 
 id_counter: int = 0
 
-def _assign_id():
+def _assign_id() -> int:
     """Every block is assigned a unique ID"""
     global id_counter
     id_counter += 1
     return id_counter
 
-@dataclass
 class CensusBlock:
-    id: int = field(default_factory=_assign_id)
-    population: int = 0
-    jerries: int = 0
-    children: List['CensusBlock'] = field(default_factory=list)
-    siblings: List['CensusBlock'] = field(default_factory=list)
+    def __init__(self, id=None, population=0, jerries=0, children=None, siblings=None):
+        self.id: int = id if id is not None else _assign_id()
+        self.population = population
+        self.jerries = jerries
+        self.children: List['CensusBlock'] = children if children is not None else []
+        self.siblings: List['CensusBlock'] = siblings if siblings is not None else []
+
+    def subtree_to_csv(self,
+                       adjacency_outfile: Path = Path('adjacency.csv'),
+                       demographic_outfile: Path = Path('demographic.csv'),
+                       hierarchy_outfile: Path = Path('hierarchy.csv')):
+        """Writes the tree rooted on this node to a set of CSV files"""
+
+        flat_tree = _gather_all_blocks(self)
+        _write_adjacency_csv(flat_tree, adjacency_outfile)
+        _write_demographic_csv(flat_tree, demographic_outfile)
+        _write_hierarchy_csv(flat_tree, hierarchy_outfile)
 
 
 def _write_adjacency_csv(blocks: List[CensusBlock], filename):
@@ -60,14 +71,3 @@ def _gather_all_blocks(root: CensusBlock) -> List[CensusBlock]:
 
     traverse(root)
     return all_blocks
-
-
-
-def write_census_tree(root: CensusBlock,
-                      adjacency_outfile: Path = Path('adjacency.csv'),
-                      demographic_outfile: Path = Path('demographic.csv'),
-                      hierarchy_outfile: Path = Path('hierarchy.csv')):
-    flat_tree = _gather_all_blocks(root)
-    _write_adjacency_csv(flat_tree, adjacency_outfile)
-    _write_demographic_csv(flat_tree, demographic_outfile)
-    _write_hierarchy_csv(flat_tree, hierarchy_outfile)
