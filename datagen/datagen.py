@@ -100,7 +100,7 @@ def _create_tree_layer(num_in_layer: int, leaves: List[CensusBlock]) -> List[Cen
         parent.siblings = adj
     return new_parents
 
-def create_tree(num_layers: int, fanout: int, total_pop: int, total_jerries: int) -> CensusBlock:
+def run_mock_census(num_layers: int, fanout: int, total_pop: int, total_jerries: int) -> CensusBlock:
     """Run a mock census, storing the output as a tree of census blocks.
 
     Arguments:
@@ -126,5 +126,5 @@ def create_tree(num_layers: int, fanout: int, total_pop: int, total_jerries: int
     return layers[-1][0]
 
 if __name__ == '__main__':
-    root = create_tree(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
+    root = run_mock_census(num_layers=2, fanout=2, total_pop=20, total_jerries=10)
     root.subtree_to_csv()

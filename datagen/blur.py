@@ -4,19 +4,19 @@ import numpy as np
 import csv
 from pathlib import Path
 from typing import List
-from census import CensusBlock, write_census_tree
-from .datagen import create_tree
+from census import CensusBlock
+from .datagen import run_mock_census
 
 def _add_laplace_noise(value, epsilon):
     l_noise = value + np.random.laplace(0, 1 / epsilon)
     return l_noise
 
-def blur_tree(root: CensusBlock, epsilon=0.5):
+def blur_census_data(root: CensusBlock, epsilon=0.5):
     root.population = round(_add_laplace_noise(root.population, epsilon), 2)
     root.jerries = round(_add_laplace_noise(root.jerries, epsilon), 2)
 
     for child in root.children:
-        blur_tree(child)
+        blur_census_data(child)
 
     # y: We can't just add laplace noise and provide block data as-is.
     #    Census data needs some basic invariants to make sense
@@ -43,13 +43,11 @@ def blur_tree(root: CensusBlock, epsilon=0.5):
     root.jerries = min(root.jerries, root.population)
 
 if __name__ == '__main__':
-    tree = create_tree(num_layers=2, fanout=2, total_pop=400, total_jerries=10)
-    write_census_tree(tree,
-                      adjacency_outfile=Path('adjacency.csv'),
-                      demographic_outfile=Path('demographic.csv'),
-                      hierarchy_outfile=Path('hierarchy.csv'))
-    blur_tree(tree)
-    write_census_tree(tree,
-        adjacency_outfile=Path('blurred_adjacency.csv'),
-        demographic_outfile=Path('blurred_demographic.csv'),
-        hierarchy_outfile=Path('blurred_hierarchy.csv'))
+    tree = run_mock_census(num_layers=2, fanout=2, total_pop=400, total_jerries=10)
+    tree.subtree_to_csv(adjacency_outfile=Path('adjacency.csv'),
+                        demographic_outfile=Path('demographic.csv'),
+                        hierarchy_outfile=Path('hierarchy.csv'))
+    blur_census_data(tree)
+    tree.subtree_to_csv(adjacency_outfile=Path('blurred_adjacency.csv'),
+                        demographic_outfile=Path('blurred_demographic.csv'),
+                        hierarchy_outfile=Path('blurred_hierarchy.csv'))
